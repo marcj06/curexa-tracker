@@ -135,86 +135,32 @@
     );
   }
 
-  // The stage the project is "at": leftmost In Progress/Blocked (covers rework
-  // where Formula Dev reopens after samples), else the first Not Started.
-  const currentStage = r => {
-    for (const s of STAGES) if (["In Progress", "Blocked"].includes(r.stages[s])) return s;
-    for (const s of STAGES) if ((r.stages[s] || "Not Started") === "Not Started") return s;
-    return null; // everything completed or N/A
-  };
-
-  const fmtDate = d => {
-    if (!d) return "";
-    const m = String(d).match(/^(\d{4})-(\d{2})-(\d{2})/);
-    return m ? `${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][+m[2]-1]} ${+m[3]}` : String(d);
-  };
-
-  const timelineFor = r => {
-    const cur = currentStage(r);
-    return el("div", { class: "timeline", role: "img",
-      "aria-label": STAGES.map(s => `${s}: ${r.stages[s]}`).join("; ") },
-      STAGES.map((s, i) => {
-        const st = r.stages[s] || "Not Started";
-        const prev = i > 0 ? (r.stages[STAGES[i - 1]] || "Not Started") : null;
-        const cls = ["tl-stage"];
-        if (i > 0 && (prev === "Completed" || prev === "N/A")) cls.push("li-fill");
-        if (st === "Completed" || st === "N/A") cls.push("lo-fill");
-        const node = el("span", { class: "tl-node", dataset: { s: st, cur: s === cur } });
-        return el("span", { class: cls.join(" "), title: `${s} — ${st}${r.stageDates?.[s] ? " (" + r.stageDates[s] + ")" : ""}` },
-          node,
-          el("span", { class: "tl-label" + (s === cur ? " cur" : "") }, SHORT[s]),
-          el("span", { class: "tl-date" }, fmtDate(r.stageDates?.[s])));
-      }));
-  };
-
   const railFor = (r, mini = false) =>
     el("div", { class: "rail" + (mini ? " mini" : ""), role: "img",
       "aria-label": STAGES.map(s => `${s}: ${r.stages[s]}`).join("; ") },
       STAGES.map(s => el("span", { class: "seg", dataset: { s: r.stages[s] || "Not Started" }, title: `${s} — ${r.stages[s] || "Not Started"}` }, SHORT[s])));
-
-  function projectCard(project, rows) {
-    const head = el("div", { class: "project-head" },
-      el("h2", {}, project),
-      el("span", { class: "project-meta" },
-        `${rows[0].dosageForm || ""}${rows.length > 1 ? ` · ${rows.length} SKUs` : ""}`));
-    const card = el("article", { class: "project-card" }, head);
-    for (const r of rows) {
-      card.append(el("button", { class: "sku-row", type: "button", onclick: () => openDrawer(r.id) },
-        el("span", { class: "sku-top" },
-          el("span", { class: "row-id" }, r.id),
-          el("span", { class: "sku-name" }, r.sku && r.sku !== "—" ? r.sku : "Single formulation",
-            el("span", { class: "sku-sub" }, esc(r.apis))),
-          el("span", { class: "progress-pct" }, rowProgress(r) + "%")),
-        timelineFor(r),
-      ));
-    }
-    return card;
-  }
 
   function renderBoard() {
     const root = $("#view-board");
     const groups = groupedProjects();
     root.replaceChildren();
     if (!groups.size) { root.append(el("p", { class: "empty" }, "No projects match. Clear the search or filter to see everything.")); return; }
-
-    const sections = new Map(CFG.PROJECT_STATUSES.map(s => [s, []]));
     for (const [project, rows] of groups) {
-      const ps = CFG.PROJECT_STATUSES.includes(rows[0].projectStatus) ? rows[0].projectStatus : "Active";
-      sections.get(ps).push([project, rows]);
-    }
-    const onlyActive = CFG.PROJECT_STATUSES.every(s => s === "Active" || !sections.get(s).length);
-    for (const status of CFG.PROJECT_STATUSES) {
-      const list = sections.get(status);
-      if (!list.length) continue;
-      if (status === "Active") {
-        if (!onlyActive) root.append(el("div", { class: "section-head" }, "Active", el("span", { class: "section-count" }, String(list.length))));
-        list.forEach(([p, rows]) => root.append(projectCard(p, rows)));
-      } else {
-        const details = el("details", { class: "section" },
-          el("summary", { class: "section-head" }, status, el("span", { class: "section-count" }, String(list.length))));
-        list.forEach(([p, rows]) => details.append(projectCard(p, rows)));
-        root.append(details);
+      const head = el("div", { class: "project-head" },
+        el("h2", {}, project),
+        el("span", { class: "project-meta" },
+          `${rows[0].dosageForm || ""}${rows.length > 1 ? ` · ${rows.length} SKUs` : ""}`));
+      const card = el("article", { class: "project-card" }, head);
+      for (const r of rows) {
+        card.append(el("button", { class: "sku-row", type: "button", onclick: () => openDrawer(r.id) },
+          el("span", { class: "row-id" }, r.id),
+          el("span", { class: "sku-name" }, r.sku && r.sku !== "—" ? r.sku : "Single formulation",
+            el("span", { class: "sku-sub" }, esc(r.apis))),
+          railFor(r),
+          el("span", { class: "progress-pct" }, rowProgress(r) + "%"),
+        ));
       }
+      root.append(card);
     }
   }
 
@@ -270,20 +216,8 @@
       }, CFG.STATUSES.map(v => el("option", { value: v, selected: (r.stages[s] || "Not Started") === v }, v)));
       return el("div", { class: "stage-item" },
         el("span", { class: "seg", dataset: { s: r.stages[s] || "Not Started" } }, SHORT[s]),
-        el("label", {}, s, r.stageDates?.[s] ? el("span", { class: "stage-date" }, fmtDate(r.stageDates[s])) : null),
-        sel);
+        el("label", {}, s), sel);
     }));
-
-    const psSel = el("select", { "aria-label": "Project section",
-      onchange: ev => updateProjectSection(r, ev.target.value) },
-      CFG.PROJECT_STATUSES.map(v => el("option", { value: v, selected: (r.projectStatus || "Active") === v }, v)));
-    const sectionRow = el("p", { class: "fact section-row" }, el("b", {}, "Section: "), psSel);
-
-    const samplesTouched = ["Samples to Curexa", "Sample Feedback"].some(s => (r.stages[s] || "Not Started") !== "Not Started");
-    const reworkBtn = (r.stages["Formula Development"] === "Completed" && samplesTouched)
-      ? el("button", { class: "btn quiet rework-btn", type: "button", onclick: () => returnToFormulaDev(r) },
-          "Return to Formula Development")
-      : null;
 
     const ta = el("textarea", { placeholder: "Add a note — feedback, blockers, decisions…" });
     const author = el("input", { placeholder: "Your name", value: storeGet("tracker.author") || "" });
@@ -303,8 +237,7 @@
         el("p", { class: "fact" }, el("b", {}, "Strengths: "), esc(r.strengths || "—")),
         el("p", { class: "fact" }, el("b", {}, "Dosage form: "), esc(r.dosageForm || "—")),
         el("p", { class: "fact" }, el("b", {}, "Last updated: "), `${esc(r.lastUpdated || "—")} by ${esc(r.updatedBy || "—")}`),
-        sectionRow,
-        el("h3", {}, "Pipeline stages"), stageList, reworkBtn,
+        el("h3", {}, "Pipeline stages"), stageList,
         el("h3", {}, `Notes — ${r.project}`), noteForm,
         ...notes.map(noteCard),
       ));
@@ -326,8 +259,6 @@
       const author = storeGet("tracker.author") || "Portal user";
       await api("update", { method: "POST", body: { rowId: r.id, stage, status, author } });
       r.lastUpdated = todayStr(); r.updatedBy = author;
-      if (!r.stageDates) r.stageDates = {};
-      r.stageDates[stage] = todayStr();
       toast(`${stage} → ${status}`);
     } catch (e) {
       r.stages[stage] = prev;
@@ -335,31 +266,6 @@
     }
     itemEl?.classList.remove("saving");
     render();
-  }
-
-  async function updateProjectSection(r, status) {
-    const prev = r.projectStatus;
-    const affected = state.rows.filter(x => x.project === r.project);
-    affected.forEach(x => (x.projectStatus = status));
-    if (state.demo) { render(); toast("Demo mode — change not saved to the workbook"); return; }
-    try {
-      const author = storeGet("tracker.author") || "Portal user";
-      await api("update", { method: "POST", body: { project: r.project, projectStatus: status, author } });
-      toast(`${r.project} → ${status}`);
-    } catch (e) {
-      affected.forEach(x => (x.projectStatus = prev));
-      toast("Couldn't save: " + e.message, true);
-    }
-    render();
-  }
-
-  async function returnToFormulaDev(r) {
-    await updateStage(r, "Formula Development", "In Progress");
-    const author = storeGet("tracker.author") || "Portal user";
-    const n = { date: todayStr(), project: r.project, sku: r.sku || "—", author,
-      note: "Returned to Formula Development after sample review." };
-    if (state.demo) { state.notes.push(n); render(); return; }
-    try { await api("note", { method: "POST", body: n }); state.notes.push(n); render(); } catch {}
   }
 
   async function submitNote(r, ta, authorInput) {
@@ -440,7 +346,6 @@
           id: "R9" + String(state.rows.length + i).padStart(2, "0"), project, sku: s.sku,
           apis: s.apis, strengths: s.strengths, dosageForm: payload.dosageForm,
           stages: Object.fromEntries(STAGES.map(k => [k, k === "Initial Intake" ? "In Progress" : "Not Started"])),
-          stageDates: { "Initial Intake": todayStr() }, projectStatus: "Active",
           lastUpdated: todayStr(), updatedBy: requester,
         }));
         close(); render(); toast("Demo mode — intake not saved to the workbook");
