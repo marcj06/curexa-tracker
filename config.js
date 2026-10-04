@@ -4,8 +4,8 @@
 // Edit and redeploy (or just re-upload) — no rebuild needed.
 // ============================================================================
 window.TRACKER_CONFIG = {
-  SITE_TITLE: "Pete Pharma × Curexa",
-  SITE_SUBTITLE: "R&D Project Tracker",
+  SITE_TITLE: "R&D Project Tracker",
+  SITE_SUBTITLE: "Pete Pharma × Curexa Pharmacy",
 
   // Pipeline stages, in order. Must match the Tracker sheet's column headers.
   STAGES: [
