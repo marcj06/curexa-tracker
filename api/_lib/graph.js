@@ -319,7 +319,7 @@ export async function readFormulas() {
     .map(r => ({
       date: excelDate(r[i["Date"]]),
       project: str(r[i["Project"]]),
-      version: Number(r[i["Version"]]) || 0,
+      version: versionText(r[i["Version"]]),
       fileName: str(r[i["File Name"]]),
       itemId: str(r[i["Item ID"]]),
       uploadedBy: str(r[i["Uploaded By"]]),
@@ -330,9 +330,14 @@ export async function readFormulas() {
 export async function addFormulaRow({ date, project, version, fileName, itemId, uploadedBy, notes }) {
   await g(`${workbookBase()}/tables('${FORMULAS_TABLE}')/rows`, {
     method: "POST",
-    body: { values: [[date, project, version, fileName, itemId, uploadedBy, notes]] },
+    // Leading apostrophe = Excel's text prefix, so "1.10" / "3-1" aren't turned into numbers or dates.
+    body: { values: [[date, project, "'" + String(version), fileName, itemId, uploadedBy, notes]] },
   });
 }
+
+// Version labels are free text ("3", "3.1", "2-final"). Rows written before the
+// text prefix may come back as numbers; a stray prefix is stripped defensively.
+const versionText = v => str(v).replace(/^'/, "");
 
 // Excel turns "2026-10-03" into a date serial on write; map it back to YYYY-MM-DD.
 const excelDate = v => typeof v === "number"

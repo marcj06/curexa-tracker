@@ -38,10 +38,12 @@ async function start(req, res) {
   const name = cleanFileName(fileName);
   await ensureFormulasTable();
   const projectName = String(project).slice(0, 120);
-  // Caller may label the version (e.g. "3.1", "2-final"); otherwise auto-number.
-  const version = cleanVersion(req.body.version) || 1 + (await readFormulas())
+  // Caller may label the version (e.g. "3.1", "2-final"); otherwise auto-number
+  // from the leading number of existing labels (same rule as the browser's prefill).
+  const version = cleanVersion(req.body.version) || 1 + Math.floor((await readFormulas())
     .filter(f => f.project === projectName)
-    .reduce((mx, f) => Math.max(mx, f.version), 0);
+    .map(f => parseFloat(f.version)).filter(Number.isFinite)
+    .reduce((mx, n) => Math.max(mx, n), 0));
 
   const folder = cleanFolderName(projectName);
   await ensureFolder(ROOT_FOLDER, folder);
