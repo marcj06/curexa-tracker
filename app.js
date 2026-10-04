@@ -10,6 +10,7 @@
     rows: [], notes: [], demo: false,
     view: "board", search: "", filter: "",
     openRowId: null,
+    openSections: new Set(), // collapsible board sections the user has expanded
   };
 
   const storeGet = k => { try { return localStorage.getItem(k) || ""; } catch { return ""; } };
@@ -162,7 +163,8 @@
         const node = el("span", { class: "tl-node", dataset: { s: st, cur: s === cur } });
         return el("span", { class: cls.join(" "), title: `${s} — ${st}${r.stageDates?.[s] ? " (" + r.stageDates[s] + ")" : ""}` },
           node,
-          el("span", { class: "tl-label" + (s === cur ? " cur" : "") }, SHORT[s]),
+          el("span", { class: "tl-label" + (s === cur ? " cur" : "") },
+            el("span", { class: "tl-full" }, s), el("span", { class: "tl-short" }, SHORT[s])),
           el("span", { class: "tl-date" }, fmtDate(r.stageDates?.[s])));
       }));
   };
@@ -202,17 +204,20 @@
       const ps = CFG.PROJECT_STATUSES.includes(rows[0].projectStatus) ? rows[0].projectStatus : "Active";
       sections.get(ps).push([project, rows]);
     }
-    const onlyActive = CFG.PROJECT_STATUSES.every(s => s === "Active" || !sections.get(s).length);
     for (const status of CFG.PROJECT_STATUSES) {
       const list = sections.get(status);
-      if (!list.length) continue;
-      if (status === "Active") {
-        if (!onlyActive) root.append(el("div", { class: "section-head" }, "Active", el("span", { class: "section-count" }, String(list.length))));
-        list.forEach(([p, rows]) => root.append(projectCard(p, rows)));
+      const isOpen = status === "Active"; // displayed as "Open Projects"; always expanded
+      if (!isOpen && !list.length) continue;
+      const head = [isOpen ? "Open Projects" : status, el("span", { class: "section-count" }, String(list.length))];
+      const body = el("div", { class: "section-body" },
+        list.length ? list.map(([p, rows]) => projectCard(p, rows))
+          : el("p", { class: "empty" }, "No open projects match."));
+      if (isOpen) {
+        root.append(el("section", { class: "section" }, el("div", { class: "section-head" }, head), body));
       } else {
-        const details = el("details", { class: "section" },
-          el("summary", { class: "section-head" }, status, el("span", { class: "section-count" }, String(list.length))));
-        list.forEach(([p, rows]) => details.append(projectCard(p, rows)));
+        const details = el("details", { class: "section", open: state.openSections.has(status),
+          ontoggle: () => details.open ? state.openSections.add(status) : state.openSections.delete(status) },
+          el("summary", { class: "section-head" }, head), body);
         root.append(details);
       }
     }
