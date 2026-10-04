@@ -10,7 +10,8 @@
     rows: [], notes: [], formulas: [], demo: false,
     view: "board", search: "", filter: "",
     openRowId: null,
-    openSections: new Set(), // collapsible board sections the user has expanded
+    upload: null,   // { rowId, text } while a formula upload is in flight
+    drafts: {},     // unsent text in the detail popup, keyed "<rowId>:<field>"
   };
 
   const storeGet = k => { try { return localStorage.getItem(k) || ""; } catch { return ""; } };
@@ -117,7 +118,7 @@
     if (state.view === "board") renderBoard();
     if (state.view === "table") renderTable();
     if (state.view === "notes") renderNotes();
-    if (state.openRowId) renderDrawer();
+    if (state.openRowId) renderDetail();
   }
 
   function renderSummary() {
@@ -182,7 +183,7 @@
         `${rows[0].dosageForm || ""}${rows.length > 1 ? ` · ${rows.length} SKUs` : ""}`));
     const card = el("article", { class: "project-card" }, head);
     for (const r of rows) {
-      card.append(el("button", { class: "sku-row", type: "button", onclick: () => openDrawer(r.id) },
+      card.append(el("button", { class: "sku-row", type: "button", onclick: () => openDetail(r.id) },
         el("span", { class: "sku-top" },
           el("span", { class: "row-id" }, r.id),
           el("span", { class: "sku-name" }, r.sku && r.sku !== "—" ? r.sku : "Single formulation",
@@ -207,22 +208,18 @@
     }
     for (const status of CFG.PROJECT_STATUSES) {
       const list = sections.get(status);
-      const isOpen = status === "Active"; // displayed as "Open Projects"; always rendered
-      if (!isOpen && !list.length) continue;
-      const head = [isOpen ? "Open Projects" : status, el("span", { class: "section-count" }, String(list.length))];
-      const body = el("div", { class: "section-body" },
-        list.length ? list.map(([p, rows]) => projectCard(p, rows))
-          : el("p", { class: "empty" }, "No open projects match."));
-      if (status !== "Paused") { // only Paused collapses; every other section is always expanded
-        root.append(el("section", { class: "section" }, el("div", { class: "section-head" }, head), body));
-      } else {
-        const details = el("details", { class: "section", open: state.openSections.has(status),
-          ontoggle: () => details.open ? state.openSections.add(status) : state.openSections.delete(status) },
-          el("summary", { class: "section-head" }, head), body);
-        root.append(details);
-      }
+      if (status !== "Active" && !list.length) continue; // Open Projects always renders
+      root.append(el("section", { class: "section" },
+        el("div", { class: "section-head" }, sectionLabel(status),
+          el("span", { class: "section-count" }, String(list.length))),
+        el("div", { class: "section-body" },
+          list.length ? list.map(([p, rows]) => projectCard(p, rows))
+            : el("p", { class: "empty" }, "No open projects match."))));
     }
   }
+
+  // Display label only — the stored/API value stays "Active".
+  const sectionLabel = status => status === "Active" ? "Open Projects" : status;
 
   function renderTable() {
     const root = $("#view-table");
@@ -230,7 +227,7 @@
     const rows = [...groups.values()].flat();
     const thead = el("tr", {},
       ["ID", "Project", "SKU", "APIs", "Strengths", "Form", ...STAGES.map(s => SHORT[s]), "%"].map(h => el("th", {}, h)));
-    const tbody = rows.map(r => el("tr", { onclick: () => openDrawer(r.id) },
+    const tbody = rows.map(r => el("tr", { onclick: () => openDetail(r.id) },
       el("td", { class: "row-id" }, r.id),
       el("td", {}, r.project), el("td", {}, r.sku || "—"),
       el("td", {}, r.apis || ""), el("td", {}, r.strengths || ""), el("td", {}, r.dosageForm || ""),
@@ -256,17 +253,46 @@
       el("span", {}, n.author)),
     el("div", { class: "note-body" }, n.note));
 
-  // ---------- drawer ----------
-  function openDrawer(rowId) { state.openRowId = rowId; renderDrawer(); }
-  function closeDrawer() {
+  // ---------- detail popup ----------
+  // Every edit inside the popup saves immediately, so closing never needs a save step.
+  let returnFocus = null;
+  function openDetail(rowId) {
+    returnFocus = document.activeElement;
+    state.openRowId = rowId;
+    renderDetail();
+    $("#detail").focus();
+  }
+  function closeDetail() {
+    if (state.upload) return; // never abandon an upload mid-flight
     state.openRowId = null;
-    $("#drawer").hidden = true; $("#drawer-backdrop").hidden = true;
+    $("#detail-backdrop").hidden = true;
+    $("#detail").replaceChildren();
+    document.body.classList.remove("modal-open");
+    if (returnFocus?.isConnected) returnFocus.focus();
   }
 
-  function renderDrawer() {
+  // Keep unsent text across re-renders (every save re-renders the popup) and close/reopen.
+  const draft = (r, key, node) => {
+    const k = `${r.id}:${key}`;
+    if (k in state.drafts) node.value = state.drafts[k];
+    node.addEventListener("input", () => (state.drafts[k] = node.value));
+    return node;
+  };
+  const clearDrafts = (r, ...keys) => keys.forEach(k => delete state.drafts[`${r.id}:${k}`]);
+
+  // Newest upload first: by date, ties broken by later position in the log.
+  const formulasFor = project => state.formulas
+    .map((f, i) => [f, i]).filter(([f]) => f.project === project)
+    .sort(([a, ai], [b, bi]) => String(b.date).localeCompare(String(a.date)) || bi - ai)
+    .map(([f]) => f);
+  const nextVersion = formulas =>
+    Math.floor(Math.max(0, ...formulas.map(f => parseFloat(f.version)).filter(Number.isFinite))) + 1;
+
+  function renderDetail() {
     const r = state.rows.find(x => x.id === state.openRowId);
-    if (!r) return closeDrawer();
-    const d = $("#drawer");
+    if (!r) { state.upload = null; return closeDetail(); }
+    const d = $("#detail");
+    const scrollTop = d.querySelector(".detail-body")?.scrollTop || 0;
     const notes = state.notes.filter(n => n.project === r.project).slice().reverse();
 
     const stageList = el("div", { class: "stage-list" }, STAGES.map(s => {
@@ -282,25 +308,34 @@
 
     const psSel = el("select", { "aria-label": "Project section",
       onchange: ev => updateProjectSection(r, ev.target.value) },
-      CFG.PROJECT_STATUSES.map(v => el("option", { value: v, selected: (r.projectStatus || "Active") === v }, v)));
+      CFG.PROJECT_STATUSES.map(v => el("option", { value: v, selected: (r.projectStatus || "Active") === v }, sectionLabel(v))));
     const sectionRow = el("p", { class: "fact section-row" }, el("b", {}, "Section: "), psSel);
 
-    const formulas = state.formulas.filter(f => f.project === r.project).sort((a, b) => b.version - a.version);
+    const formulas = formulasFor(r.project);
     const formulaList = formulas.length
-      ? el("div", { class: "formula-list" }, formulas.map(f => el("div", { class: "formula-item" },
+      ? el("div", { class: "formula-list" }, formulas.map((f, i) => el("div", { class: "formula-item" },
           el("div", { class: "formula-line" },
             el("span", { class: "formula-meta" },
-              el("b", {}, `v${f.version}`), ` · ${fmtDate(f.date)} · `,
+              el("b", {}, `v${f.version}`),
+              i === 0 ? el("span", { class: "formula-current", title: "Most recent upload" }, "✓ Current") : null,
+              ` · ${fmtDate(f.date)} · `,
               el("span", { class: "formula-name" }, f.fileName), ` · by ${f.uploadedBy || "—"}`),
             el("a", { class: "formula-dl", href: "/api/formulas?download=" + encodeURIComponent(f.itemId),
               target: "_blank", rel: "noopener" }, "Download")),
           f.notes ? el("div", { class: "formula-notes" }, f.notes) : null)))
       : el("p", { class: "fact muted" }, "No formula files yet.");
-    const fileInput = el("input", { type: "file", "aria-label": "Formula file" });
-    const changeTa = el("textarea", { placeholder: "What changed? (required)", rows: 2 });
-    const uploadBtn = el("button", { class: "btn quiet", type: "button",
-      onclick: () => uploadFormula(r, fileInput, changeTa, uploadBtn) }, "Upload new version");
-    const formulaForm = el("div", { class: "formula-form" }, fileInput, changeTa,
+    const uploading = state.upload?.rowId === r.id;
+    const fileInput = el("input", { type: "file", "aria-label": "Formula file", disabled: uploading });
+    const versionInput = draft(r, "version", el("input", { type: "text", maxlength: 20, "aria-label": "Version",
+      value: String(nextVersion(formulas)), disabled: uploading }));
+    const changeTa = draft(r, "changes", el("textarea", { placeholder: "What changed? (required)", rows: 2, disabled: uploading }));
+    const uploadBtn = el("button", { class: "btn quiet formula-upload-btn", type: "button", disabled: uploading,
+      onclick: () => uploadFormula(r, fileInput, versionInput, changeTa) },
+      uploading ? state.upload.text : "Upload new version");
+    const formulaForm = el("div", { class: "formula-form" },
+      el("div", { class: "formula-form-row" }, fileInput,
+        el("label", { class: "formula-version" }, "Version", versionInput)),
+      changeTa,
       el("div", { class: "note-controls" }, uploadBtn));
 
     const samplesTouched = ["Samples to Curexa", "Sample Feedback"].some(s => (r.stages[s] || "Not Started") !== "Not Started");
@@ -309,19 +344,20 @@
           "Return to Formula Development")
       : null;
 
-    const ta = el("textarea", { placeholder: "Add a note — feedback, blockers, decisions…" });
+    const ta = draft(r, "note", el("textarea", { placeholder: "Add a note — feedback, blockers, decisions…" }));
     const author = el("input", { placeholder: "Your name", value: storeGet("tracker.author") || "" });
     const noteForm = el("div", { class: "note-form" }, ta,
       el("div", { class: "note-controls" }, author,
         el("button", { class: "btn quiet", type: "button", onclick: () => submitNote(r, ta, author) }, "Add note")));
 
     d.replaceChildren(
-      el("div", { class: "drawer-head" },
+      el("div", { class: "detail-head" },
         el("div", {},
           el("span", { class: "row-id" }, r.id + (r.sku && r.sku !== "—" ? ` · ${r.sku}` : "")),
           el("h2", {}, r.project)),
-        el("button", { class: "drawer-close", "aria-label": "Close", onclick: closeDrawer }, "×")),
-      el("div", { class: "drawer-body" },
+        el("button", { class: "detail-close", type: "button", "aria-label": "Close", disabled: uploading,
+          title: uploading ? "Wait for the upload to finish" : "Close", onclick: closeDetail }, "×")),
+      el("div", { class: "detail-body" },
         el("h3", {}, "Formulation"),
         el("p", { class: "fact" }, el("b", {}, "APIs: "), esc(r.apis || "—")),
         el("p", { class: "fact" }, el("b", {}, "Strengths: "), esc(r.strengths || "—")),
@@ -333,8 +369,9 @@
         el("h3", {}, `Notes — ${r.project}`), noteForm,
         ...notes.map(noteCard),
       ));
-    d.hidden = false;
-    $("#drawer-backdrop").hidden = false;
+    $("#detail-backdrop").hidden = false;
+    document.body.classList.add("modal-open");
+    d.querySelector(".detail-body").scrollTop = scrollTop; // re-render after a save shouldn't jump to the top
   }
 
   // ---------- actions ----------
@@ -392,9 +429,22 @@
   const CHUNK = 25 * 320 * 1024;
   const MAX_UPLOAD = 100 * 1024 * 1024;
 
-  async function uploadFormula(r, fileInput, changeTa, btn) {
+  // Upload state lives in state.upload so the popup keeps showing it (and refuses
+  // to close) even if a save elsewhere re-renders the popup mid-upload.
+  function setUploading(r, text) {
+    state.upload = text == null ? null : { rowId: r.id, text };
+    const d = $("#detail");
+    d.querySelectorAll(".formula-form input, .formula-form textarea, .formula-upload-btn, .detail-close")
+      .forEach(n => (n.disabled = !!state.upload));
+    const btn = d.querySelector(".formula-upload-btn");
+    if (btn) btn.textContent = text ?? "Upload new version";
+  }
+
+  async function uploadFormula(r, fileInput, versionInput, changeTa) {
+    if (state.upload) return;
     const file = fileInput.files[0];
     const notes = changeTa.value.trim();
+    const version = versionInput.value.trim().replace(/[^A-Za-z0-9.-]/g, "").slice(0, 20);
     if (!file) { fileInput.focus(); toast("Choose a file to upload", true); return; }
     if (!notes) { changeTa.focus(); toast("Describe what changed in this version", true); return; }
     if (state.demo) { toast("Demo mode — file not uploaded to OneDrive"); return; }
@@ -402,12 +452,11 @@
     if (file.size > MAX_UPLOAD) { toast("Files must be 100 MB or smaller", true); return; }
 
     const author = storeGet("tracker.author") || "Portal user";
-    const label = btn.textContent;
-    btn.disabled = true; btn.textContent = "Uploading… 0%";
+    setUploading(r, "Uploading… 0%");
     let uploadUrl;
     try {
       const started = await api("formulas", { method: "POST",
-        body: { action: "start", project: r.project, fileName: file.name, notes, author, size: file.size } });
+        body: { action: "start", project: r.project, version, fileName: file.name, notes, author, size: file.size } });
       uploadUrl = started.uploadUrl;
       let item = null;
       for (let start = 0; start < file.size; start += CHUNK) {
@@ -417,7 +466,7 @@
           headers: { "Content-Range": `bytes ${start}-${end - 1}/${file.size}` },
           body: file.slice(start, end) });
         if (!res.ok) throw new Error(`upload failed (HTTP ${res.status})`);
-        btn.textContent = `Uploading… ${Math.round(100 * end / file.size)}%`;
+        setUploading(r, `Uploading… ${Math.round(100 * end / file.size)}%`);
         if (end === file.size) item = await res.json(); // final chunk returns the driveItem
       }
       if (!item?.id) throw new Error("upload finished without a file id");
@@ -426,12 +475,14 @@
         body: { action: "complete", project: r.project, version: started.version,
           fileName: item.name || file.name, itemId: item.id, author, notes } });
       state.formulas.push(done.formula);
+      state.upload = null;
+      clearDrafts(r, "version", "changes");
       toast(`Uploaded v${started.version} of ${r.project}`);
       render();
     } catch (e) {
       if (uploadUrl) fetch(uploadUrl, { method: "DELETE" }).catch(() => {}); // drop the half-finished session
       if (e.message !== "auth") toast("Couldn't upload: " + e.message, true);
-      btn.disabled = false; btn.textContent = label;
+      setUploading(r, null); // re-enable without re-rendering, so the chosen file stays selected
     }
   }
 
@@ -442,12 +493,12 @@
     storeSet("tracker.author", author);
     const n = { date: todayStr(), project: r.project, sku: r.sku || "—", author, note };
     if (state.demo) {
-      state.notes.push(n); render(); toast("Demo mode — note not saved to the workbook");
+      state.notes.push(n); clearDrafts(r, "note"); render(); toast("Demo mode — note not saved to the workbook");
       return;
     }
     try {
       await api("note", { method: "POST", body: n });
-      state.notes.push(n); ta.value = "";
+      state.notes.push(n); ta.value = ""; clearDrafts(r, "note");
       render(); toast("Note added");
     } catch (e) { toast("Couldn't save the note: " + e.message, true); }
   }
@@ -573,8 +624,15 @@
     $("#btn-refresh").addEventListener("click", loadData);
     $("#btn-new").addEventListener("click", openIntake);
     $("#gate-form").addEventListener("submit", tryLogin);
-    $("#drawer-backdrop").addEventListener("click", closeDrawer);
-    document.addEventListener("keydown", ev => { if (ev.key === "Escape") closeDrawer(); });
+    // Close only on a genuine click on the dimmed area — not when a text selection
+    // started inside the panel and the mouse was released outside it.
+    const backdrop = $("#detail-backdrop");
+    let downOnBackdrop = false;
+    backdrop.addEventListener("mousedown", ev => (downOnBackdrop = ev.target === backdrop));
+    backdrop.addEventListener("click", ev => { if (downOnBackdrop && ev.target === backdrop) closeDetail(); });
+    document.addEventListener("keydown", ev => {
+      if (ev.key === "Escape" && state.openRowId && !$("#modal-root").childElementCount) closeDetail();
+    });
 
     $("#app").hidden = false;
     loadData();

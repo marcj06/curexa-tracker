@@ -65,8 +65,9 @@
       <section id="view-notes" class="view" hidden></section>
     </main>
 
-    <aside id="drawer" class="drawer" hidden aria-label="Project detail"></aside>
-    <div id="drawer-backdrop" class="drawer-backdrop" hidden></div>
+    <div id="detail-backdrop" class="modal-backdrop" hidden>
+      <div id="detail" class="modal detail-modal" role="dialog" aria-modal="true" aria-label="Project detail" tabindex="-1"></div>
+    </div>
 
     <div id="modal-root"></div>
     <div id="toast" class="toast" hidden></div>

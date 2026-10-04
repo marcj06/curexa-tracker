@@ -223,23 +223,25 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .note-head b { color: var(--ink); font-weight: 600; }
 .note-body { font-size: .9rem; white-space: pre-wrap; }
 
-/* ---------- drawer ---------- */
-.drawer-backdrop {
-  position: fixed; inset: 0; background: rgba(13, 36, 32, 0.35); z-index: 40;
+/* ---------- project detail popup (built on .modal / .modal-backdrop) ---------- */
+body.modal-open { overflow: hidden; }
+.modal.detail-modal {
+  width: min(680px, 94vw); max-height: 90vh; padding: 0; overflow: hidden;
+  display: flex; flex-direction: column; outline: none;
 }
-.drawer {
-  position: fixed; top: 0; right: 0; bottom: 0; width: min(460px, 100vw);
-  background: var(--surface); z-index: 50; box-shadow: -8px 0 32px rgba(13,36,32,.18);
-  display: flex; flex-direction: column;
-}
-.drawer-head { padding: 16px 20px; border-bottom: 1px solid var(--line);
+.detail-head { padding: 16px 20px; border-bottom: 1px solid var(--line); flex: none;
   display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
-.drawer-head h2 { margin: 0 0 2px; font-size: 1rem; }
-.drawer-head .row-id { width: auto; }
-.drawer-body { flex: 1; overflow-y: auto; padding: 16px 20px; }
-.drawer-close { border: 0; background: none; font-size: 1.3rem; cursor: pointer; color: var(--muted); line-height: 1; padding: 4px; }
-.drawer h3 { font-size: .8rem; color: var(--muted); font-weight: 600; margin: 18px 0 8px; }
-.drawer h3:first-child { margin-top: 0; }
+.detail-head h2 { margin: 0 0 2px; font-size: 1rem; }
+.detail-head .row-id { width: auto; }
+.detail-body { flex: 1; min-height: 0; overflow-y: auto; padding: 16px 20px 20px; }
+.detail-close { border: 0; background: none; font-size: 1.3rem; cursor: pointer; color: var(--muted); line-height: 1; padding: 4px; }
+.detail-close:disabled { opacity: .35; cursor: not-allowed; }
+.detail-modal h3 { font-size: .8rem; color: var(--muted); font-weight: 600; margin: 18px 0 8px; }
+.detail-modal h3:first-child { margin-top: 0; }
+@media (max-width: 600px) {
+  .modal-backdrop:has(> .detail-modal) { padding: 0; }
+  .modal.detail-modal { width: 100vw; height: 100dvh; max-height: 100dvh; border-radius: 0; }
+}
 .fact { font-size: .875rem; margin: 0 0 4px; }
 .fact b { font-weight: 600; }
 
@@ -264,7 +266,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .note-form input {
   flex: 1; border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; font-size: .85rem;
 }
-.drawer .note-card { padding: 10px 12px; }
+.detail-modal .note-card { padding: 10px 12px; }
 
 /* ---------- modal (intake) ---------- */
 .modal-backdrop { position: fixed; inset: 0; background: rgba(13,36,32,.45); z-index: 60;
@@ -369,28 +371,20 @@ button, input, select, textarea { font: inherit; color: inherit; }
   border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg);
   margin-bottom: 16px; overflow: hidden;
 }
+/* --brand-deep is the same in light and dark themes, so white text works in both. */
 .section-head {
   display: flex; align-items: center; gap: 8px; padding: 10px 16px;
-  background: var(--brand-wash); color: var(--brand-deep);
-  font-size: .85rem; font-weight: 600; cursor: default; list-style: none;
+  background: var(--brand-deep); color: #fff;
+  font-size: .85rem; font-weight: 600; letter-spacing: .01em;
 }
-:root[data-theme="dark"] .section-head { color: var(--ink); }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .section-head { color: var(--ink); }
-}
-details.section[open] > .section-head, section.section > .section-head { border-bottom: 1px solid var(--line); }
 .section-body { padding: 14px 14px 0; }
 .section-body .empty { padding: 16px 0 30px; }
-details.section > summary.section-head { cursor: pointer; }
-details.section > summary.section-head::-webkit-details-marker { display: none; }
-details.section > summary.section-head::before { content: "▸"; font-size: .7rem; }
-details.section[open] > summary.section-head::before { content: "▾"; }
 .section-count {
-  background: var(--surface); color: var(--muted); border-radius: 999px;
-  padding: 1px 9px; font-size: .72rem; font-weight: 600;
+  background: #fff; color: var(--brand-deep); border-radius: 999px;
+  padding: 1px 9px; font-size: .72rem; font-weight: 700;
 }
 
-/* ---------- drawer extras ---------- */
+/* ---------- detail popup extras ---------- */
 .stage-date { display: block; font-weight: 400; font-size: .7rem; color: var(--muted); }
 .section-row select {
   border: 1px solid var(--line); border-radius: 7px; padding: 4px 8px;
@@ -416,3 +410,15 @@ details.section[open] > summary.section-head::before { content: "▾"; }
   resize: vertical; font-size: .85rem; background: var(--surface);
 }
 .formula-form .note-controls { display: flex; justify-content: flex-end; margin-top: 0; }
+.formula-form-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.formula-version { display: flex; align-items: center; gap: 6px; font-size: .8rem; font-weight: 600; color: var(--muted); }
+.formula-version input {
+  width: 90px; border: 1px solid var(--line); border-radius: 7px; padding: 5px 8px;
+  font-size: .85rem; background: var(--surface); color: var(--ink);
+}
+.formula-form :disabled { opacity: .6; cursor: not-allowed; }
+.formula-current {
+  display: inline-block; margin-left: 6px; padding: 0 7px; border-radius: 999px;
+  background: var(--ok-bg); color: var(--ok-ink); font-size: .7rem; font-weight: 600;
+  vertical-align: 1px;
+}

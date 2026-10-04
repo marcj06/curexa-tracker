@@ -23,5 +23,6 @@ window.TRACKER_CONFIG = {
   STATUSES: ["Not Started", "In Progress", "Blocked", "Completed", "N/A"],
 
   // Project sections, in display order. Must match the workbook's Project Status dropdown.
-  PROJECT_STATUSES: ["Active", "Paused", "Licensed", "Not Feasible"],
+  // "Active" is displayed as "Open Projects" on the board.
+  PROJECT_STATUSES: ["Active", "Licensed", "Paused", "Not Feasible"],
 };

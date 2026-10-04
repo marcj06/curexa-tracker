@@ -38,7 +38,8 @@ async function start(req, res) {
   const name = cleanFileName(fileName);
   await ensureFormulasTable();
   const projectName = String(project).slice(0, 120);
-  const version = 1 + (await readFormulas())
+  // Caller may label the version (e.g. "3.1", "2-final"); otherwise auto-number.
+  const version = cleanVersion(req.body.version) || 1 + (await readFormulas())
     .filter(f => f.project === projectName)
     .reduce((mx, f) => Math.max(mx, f.version), 0);
 
@@ -51,8 +52,8 @@ async function start(req, res) {
 
 async function complete(req, res) {
   const { project, version, fileName, itemId, author, notes } = req.body;
-  const v = parseInt(version, 10);
-  if (!project || !fileName || !(v > 0)) return res.status(400).json({ error: "Expected project, version and fileName" });
+  const v = cleanVersion(version);
+  if (!project || !fileName || !v) return res.status(400).json({ error: "Expected project, version and fileName" });
   if (!itemId || !ITEM_ID.test(itemId)) return res.status(400).json({ error: "Invalid item id" });
 
   const row = {
@@ -86,6 +87,9 @@ async function download(req, res) {
   res.setHeader("Location", url);
   res.end();
 }
+
+/** Version label: letters, digits, dots and dashes only, max 20 chars ("" if nothing usable). */
+const cleanVersion = raw => String(raw ?? "").replace(/[^A-Za-z0-9.-]/g, "").slice(0, 20);
 
 // Characters OneDrive rejects in names, plus control chars.
 const ILLEGAL = /[\u0000-\u001f"*:<>?|\\/#%]/g;
