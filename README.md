@@ -94,6 +94,11 @@ automatically. Nothing else to configure.
 
 ## Day-to-day
 
+- **Sections**: each project has a Project Status (Active / Paused / Licensed /
+  Not Feasible) — column G in the workbook, or the "Section" dropdown in a
+  project's detail panel. The board groups projects by it.
+- **Stage dates**: when a stage status changes on the site, the date is stamped
+  into the matching "...Date" column (S–Z) and shows under the timeline nodes.
 - **Everyone**: open the site, enter the password, see the pipeline. Click any
   SKU row for details, change stage statuses, add notes, submit new projects.
 - **You**: keep editing the workbook in Excel whenever you like — the site

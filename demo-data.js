@@ -8,6 +8,7 @@ window.DEMO_DATA = {
    "apis": "Estriol",
    "strengths": "\u2014",
    "dosageForm": "Topical Anhydrous",
+   "projectStatus": "Active",
    "stages": {
     "Initial Intake": "Completed",
     "APIs to Pete Pharma": "N/A",
@@ -17,6 +18,16 @@ window.DEMO_DATA = {
     "Formula Finalized": "Completed",
     "SOP Finalized": "Completed",
     "Production": "Not Started"
+   },
+   "stageDates": {
+    "Initial Intake": "",
+    "APIs to Pete Pharma": "",
+    "Formula Development": "",
+    "Samples to Curexa": "",
+    "Sample Feedback": "",
+    "Formula Finalized": "",
+    "SOP Finalized": "",
+    "Production": ""
    },
    "lastUpdated": "2026-10-03",
    "updatedBy": "Migration"
@@ -28,6 +39,7 @@ window.DEMO_DATA = {
    "apis": "Bimatoprost",
    "strengths": "0.035%",
    "dosageForm": "Topical Anhydrous",
+   "projectStatus": "Active",
    "stages": {
     "Initial Intake": "Completed",
     "APIs to Pete Pharma": "Completed",
@@ -37,6 +49,16 @@ window.DEMO_DATA = {
     "Formula Finalized": "Completed",
     "SOP Finalized": "Completed",
     "Production": "Not Started"
+   },
+   "stageDates": {
+    "Initial Intake": "",
+    "APIs to Pete Pharma": "",
+    "Formula Development": "",
+    "Samples to Curexa": "",
+    "Sample Feedback": "",
+    "Formula Finalized": "",
+    "SOP Finalized": "",
+    "Production": ""
    },
    "lastUpdated": "2026-10-03",
    "updatedBy": "Migration"
@@ -48,6 +70,7 @@ window.DEMO_DATA = {
    "apis": "GHK-Cu",
    "strengths": "4%",
    "dosageForm": "Topical Anhydrous",
+   "projectStatus": "Active",
    "stages": {
     "Initial Intake": "Completed",
     "APIs to Pete Pharma": "Completed",
@@ -57,6 +80,16 @@ window.DEMO_DATA = {
     "Formula Finalized": "Completed",
     "SOP Finalized": "Completed",
     "Production": "Not Started"
+   },
+   "stageDates": {
+    "Initial Intake": "",
+    "APIs to Pete Pharma": "",
+    "Formula Development": "",
+    "Samples to Curexa": "",
+    "Sample Feedback": "",
+    "Formula Finalized": "",
+    "SOP Finalized": "",
+    "Production": ""
    },
    "lastUpdated": "2026-10-03",
    "updatedBy": "Migration"
@@ -68,6 +101,7 @@ window.DEMO_DATA = {
    "apis": "Atorvastatin; CoQ10; Resveratrol; Pyridoxine HCl",
    "strengths": "11.5 mg; 100 mg; 100 mg; 2.44 mg",
    "dosageForm": "Oral IR Tablet",
+   "projectStatus": "Active",
    "stages": {
     "Initial Intake": "Completed",
     "APIs to Pete Pharma": "Completed",
@@ -77,6 +111,16 @@ window.DEMO_DATA = {
     "Formula Finalized": "Not Started",
     "SOP Finalized": "Not Started",
     "Production": "Not Started"
+   },
+   "stageDates": {
+    "Initial Intake": "",
+    "APIs to Pete Pharma": "",
+    "Formula Development": "",
+    "Samples to Curexa": "",
+    "Sample Feedback": "",
+    "Formula Finalized": "",
+    "SOP Finalized": "",
+    "Production": ""
    },
    "lastUpdated": "2026-10-03",
    "updatedBy": "Migration"
@@ -88,6 +132,7 @@ window.DEMO_DATA = {
    "apis": "Atorvastatin; CoQ10; Resveratrol; Pyridoxine HCl",
    "strengths": "23 mg; 100 mg; 100 mg; 2.44 mg",
    "dosageForm": "Oral IR Tablet",
+   "projectStatus": "Active",
    "stages": {
     "Initial Intake": "Completed",
     "APIs to Pete Pharma": "Completed",
@@ -97,6 +142,16 @@ window.DEMO_DATA = {
     "Formula Finalized": "Not Started",
     "SOP Finalized": "Not Started",
     "Production": "Not Started"
+   },
+   "stageDates": {
+    "Initial Intake": "",
+    "APIs to Pete Pharma": "",
+    "Formula Development": "",
+    "Samples to Curexa": "",
+    "Sample Feedback": "",
+    "Formula Finalized": "",
+    "SOP Finalized": "",
+    "Production": ""
    },
    "lastUpdated": "2026-10-03",
    "updatedBy": "Migration"
@@ -108,6 +163,7 @@ window.DEMO_DATA = {
    "apis": "Atorvastatin; Ezetimibe; CoQ10; Resveratrol; Pyridoxine HCl",
    "strengths": "11.5 mg; 8.5 mg; 100 mg; 100 mg; 2.44 mg",
    "dosageForm": "Oral IR Tablet",
+   "projectStatus": "Active",
    "stages": {
     "Initial Intake": "Completed",
     "APIs to Pete Pharma": "Completed",
@@ -117,6 +173,16 @@ window.DEMO_DATA = {
     "Formula Finalized": "Not Started",
     "SOP Finalized": "Not Started",
     "Production": "Not Started"
+   },
+   "stageDates": {
+    "Initial Intake": "",
+    "APIs to Pete Pharma": "",
+    "Formula Development": "",
+    "Samples to Curexa": "",
+    "Sample Feedback": "",
+    "Formula Finalized": "",
+    "SOP Finalized": "",
+    "Production": ""
    },
    "lastUpdated": "2026-10-03",
    "updatedBy": "Migration"
@@ -128,6 +194,7 @@ window.DEMO_DATA = {
    "apis": "Atorvastatin; Ezetimibe; CoQ10; Resveratrol; Pyridoxine HCl",
    "strengths": "23 mg; 8.5 mg; 100 mg; 100 mg; 2.44 mg",
    "dosageForm": "Oral IR Tablet",
+   "projectStatus": "Active",
    "stages": {
     "Initial Intake": "Completed",
     "APIs to Pete Pharma": "Completed",
@@ -137,6 +204,16 @@ window.DEMO_DATA = {
     "Formula Finalized": "Not Started",
     "SOP Finalized": "Not Started",
     "Production": "Not Started"
+   },
+   "stageDates": {
+    "Initial Intake": "",
+    "APIs to Pete Pharma": "",
+    "Formula Development": "",
+    "Samples to Curexa": "",
+    "Sample Feedback": "",
+    "Formula Finalized": "",
+    "SOP Finalized": "",
+    "Production": ""
    },
    "lastUpdated": "2026-10-03",
    "updatedBy": "Migration"
@@ -148,6 +225,7 @@ window.DEMO_DATA = {
    "apis": "Rosuvastatin; CoQ10; Resveratrol; Pyridoxine HCl",
    "strengths": "5.6 mg; 100 mg; 100 mg; 2.44 mg",
    "dosageForm": "Oral IR Tablet",
+   "projectStatus": "Active",
    "stages": {
     "Initial Intake": "Completed",
     "APIs to Pete Pharma": "Blocked",
@@ -157,6 +235,16 @@ window.DEMO_DATA = {
     "Formula Finalized": "Not Started",
     "SOP Finalized": "Not Started",
     "Production": "Not Started"
+   },
+   "stageDates": {
+    "Initial Intake": "",
+    "APIs to Pete Pharma": "",
+    "Formula Development": "",
+    "Samples to Curexa": "",
+    "Sample Feedback": "",
+    "Formula Finalized": "",
+    "SOP Finalized": "",
+    "Production": ""
    },
    "lastUpdated": "2026-10-03",
    "updatedBy": "Migration"
@@ -168,6 +256,7 @@ window.DEMO_DATA = {
    "apis": "Rosuvastatin; CoQ10; Resveratrol; Pyridoxine HCl",
    "strengths": "11.2 mg; 100 mg; 100 mg; 2.44 mg",
    "dosageForm": "Oral IR Tablet",
+   "projectStatus": "Active",
    "stages": {
     "Initial Intake": "Completed",
     "APIs to Pete Pharma": "Blocked",
@@ -177,6 +266,16 @@ window.DEMO_DATA = {
     "Formula Finalized": "Not Started",
     "SOP Finalized": "Not Started",
     "Production": "Not Started"
+   },
+   "stageDates": {
+    "Initial Intake": "",
+    "APIs to Pete Pharma": "",
+    "Formula Development": "",
+    "Samples to Curexa": "",
+    "Sample Feedback": "",
+    "Formula Finalized": "",
+    "SOP Finalized": "",
+    "Production": ""
    },
    "lastUpdated": "2026-10-03",
    "updatedBy": "Migration"
@@ -188,6 +287,7 @@ window.DEMO_DATA = {
    "apis": "Rosuvastatin; Ezetimibe; CoQ10; Resveratrol; Pyridoxine HCl",
    "strengths": "5.6 mg; 8.5 mg; 100 mg; 100 mg; 2.44 mg",
    "dosageForm": "Oral IR Tablet",
+   "projectStatus": "Active",
    "stages": {
     "Initial Intake": "Completed",
     "APIs to Pete Pharma": "Blocked",
@@ -197,6 +297,16 @@ window.DEMO_DATA = {
     "Formula Finalized": "Not Started",
     "SOP Finalized": "Not Started",
     "Production": "Not Started"
+   },
+   "stageDates": {
+    "Initial Intake": "",
+    "APIs to Pete Pharma": "",
+    "Formula Development": "",
+    "Samples to Curexa": "",
+    "Sample Feedback": "",
+    "Formula Finalized": "",
+    "SOP Finalized": "",
+    "Production": ""
    },
    "lastUpdated": "2026-10-03",
    "updatedBy": "Migration"
@@ -208,6 +318,7 @@ window.DEMO_DATA = {
    "apis": "Rosuvastatin; Ezetimibe; CoQ10; Resveratrol; Pyridoxine HCl",
    "strengths": "11.2 mg; 8.5 mg; 100 mg; 100 mg; 2.44 mg",
    "dosageForm": "Oral IR Tablet",
+   "projectStatus": "Active",
    "stages": {
     "Initial Intake": "Completed",
     "APIs to Pete Pharma": "Blocked",
@@ -217,6 +328,16 @@ window.DEMO_DATA = {
     "Formula Finalized": "Not Started",
     "SOP Finalized": "Not Started",
     "Production": "Not Started"
+   },
+   "stageDates": {
+    "Initial Intake": "",
+    "APIs to Pete Pharma": "",
+    "Formula Development": "",
+    "Samples to Curexa": "",
+    "Sample Feedback": "",
+    "Formula Finalized": "",
+    "SOP Finalized": "",
+    "Production": ""
    },
    "lastUpdated": "2026-10-03",
    "updatedBy": "Migration"
@@ -228,6 +349,7 @@ window.DEMO_DATA = {
    "apis": "Atorvastatin; Rosuvastatin; Ezetimibe; CoQ10; Resveratrol; Pyridoxine HCl",
    "strengths": "23 mg; 11.2 mg; 8.5 mg; 100 mg; 100 mg; 2.44 mg",
    "dosageForm": "Oral IR Tablet",
+   "projectStatus": "Active",
    "stages": {
     "Initial Intake": "Completed",
     "APIs to Pete Pharma": "Blocked",
@@ -237,6 +359,16 @@ window.DEMO_DATA = {
     "Formula Finalized": "Not Started",
     "SOP Finalized": "Not Started",
     "Production": "Not Started"
+   },
+   "stageDates": {
+    "Initial Intake": "",
+    "APIs to Pete Pharma": "",
+    "Formula Development": "",
+    "Samples to Curexa": "",
+    "Sample Feedback": "",
+    "Formula Finalized": "",
+    "SOP Finalized": "",
+    "Production": ""
    },
    "lastUpdated": "2026-10-03",
    "updatedBy": "Migration"
@@ -248,6 +380,7 @@ window.DEMO_DATA = {
    "apis": "Sermorelin",
    "strengths": "1000 mcg",
    "dosageForm": "ODT",
+   "projectStatus": "Active",
    "stages": {
     "Initial Intake": "Completed",
     "APIs to Pete Pharma": "Completed",
@@ -257,6 +390,16 @@ window.DEMO_DATA = {
     "Formula Finalized": "Completed",
     "SOP Finalized": "Completed",
     "Production": "In Progress"
+   },
+   "stageDates": {
+    "Initial Intake": "",
+    "APIs to Pete Pharma": "",
+    "Formula Development": "",
+    "Samples to Curexa": "",
+    "Sample Feedback": "",
+    "Formula Finalized": "",
+    "SOP Finalized": "",
+    "Production": ""
    },
    "lastUpdated": "2026-10-03",
    "updatedBy": "Migration"
@@ -268,6 +411,7 @@ window.DEMO_DATA = {
    "apis": "Sermorelin",
    "strengths": "500 mcg",
    "dosageForm": "ODT",
+   "projectStatus": "Active",
    "stages": {
     "Initial Intake": "Completed",
     "APIs to Pete Pharma": "Completed",
@@ -277,6 +421,16 @@ window.DEMO_DATA = {
     "Formula Finalized": "Completed",
     "SOP Finalized": "Completed",
     "Production": "In Progress"
+   },
+   "stageDates": {
+    "Initial Intake": "",
+    "APIs to Pete Pharma": "",
+    "Formula Development": "",
+    "Samples to Curexa": "",
+    "Sample Feedback": "",
+    "Formula Finalized": "",
+    "SOP Finalized": "",
+    "Production": ""
    },
    "lastUpdated": "2026-10-03",
    "updatedBy": "Migration"
@@ -288,6 +442,7 @@ window.DEMO_DATA = {
    "apis": "GHK-Cu",
    "strengths": "2%",
    "dosageForm": "Versapro Anhydrous Topical",
+   "projectStatus": "Active",
    "stages": {
     "Initial Intake": "Completed",
     "APIs to Pete Pharma": "In Progress",
@@ -297,6 +452,16 @@ window.DEMO_DATA = {
     "Formula Finalized": "Completed",
     "SOP Finalized": "Completed",
     "Production": "Not Started"
+   },
+   "stageDates": {
+    "Initial Intake": "",
+    "APIs to Pete Pharma": "",
+    "Formula Development": "",
+    "Samples to Curexa": "",
+    "Sample Feedback": "",
+    "Formula Finalized": "",
+    "SOP Finalized": "",
+    "Production": ""
    },
    "lastUpdated": "2026-10-03",
    "updatedBy": "Migration"
@@ -308,6 +473,7 @@ window.DEMO_DATA = {
    "apis": "Sildenafil; Tadalafil",
    "strengths": "56 mg; 12 mg",
    "dosageForm": "ODT",
+   "projectStatus": "Active",
    "stages": {
     "Initial Intake": "Completed",
     "APIs to Pete Pharma": "Completed",
@@ -317,6 +483,16 @@ window.DEMO_DATA = {
     "Formula Finalized": "Completed",
     "SOP Finalized": "Completed",
     "Production": "Not Started"
+   },
+   "stageDates": {
+    "Initial Intake": "",
+    "APIs to Pete Pharma": "",
+    "Formula Development": "",
+    "Samples to Curexa": "",
+    "Sample Feedback": "",
+    "Formula Finalized": "",
+    "SOP Finalized": "",
+    "Production": ""
    },
    "lastUpdated": "2026-10-03",
    "updatedBy": "Migration"
@@ -328,6 +504,7 @@ window.DEMO_DATA = {
    "apis": "Sildenafil; Tadalafil",
    "strengths": "84 mg; 17 mg",
    "dosageForm": "ODT",
+   "projectStatus": "Active",
    "stages": {
     "Initial Intake": "Completed",
     "APIs to Pete Pharma": "Completed",
@@ -337,6 +514,16 @@ window.DEMO_DATA = {
     "Formula Finalized": "Completed",
     "SOP Finalized": "Completed",
     "Production": "Not Started"
+   },
+   "stageDates": {
+    "Initial Intake": "",
+    "APIs to Pete Pharma": "",
+    "Formula Development": "",
+    "Samples to Curexa": "",
+    "Sample Feedback": "",
+    "Formula Finalized": "",
+    "SOP Finalized": "",
+    "Production": ""
    },
    "lastUpdated": "2026-10-03",
    "updatedBy": "Migration"
@@ -348,6 +535,7 @@ window.DEMO_DATA = {
    "apis": "Sildenafil; Tadalafil",
    "strengths": "110 mg; 23 mg",
    "dosageForm": "ODT",
+   "projectStatus": "Active",
    "stages": {
     "Initial Intake": "Completed",
     "APIs to Pete Pharma": "Completed",
@@ -357,6 +545,16 @@ window.DEMO_DATA = {
     "Formula Finalized": "Completed",
     "SOP Finalized": "Completed",
     "Production": "Not Started"
+   },
+   "stageDates": {
+    "Initial Intake": "",
+    "APIs to Pete Pharma": "",
+    "Formula Development": "",
+    "Samples to Curexa": "",
+    "Sample Feedback": "",
+    "Formula Finalized": "",
+    "SOP Finalized": "",
+    "Production": ""
    },
    "lastUpdated": "2026-10-03",
    "updatedBy": "Migration"
@@ -368,6 +566,7 @@ window.DEMO_DATA = {
    "apis": "NAD+; Glutathione; Methylcobalamin (B12)",
    "strengths": "150 mg; 50 mg; 1 mg",
    "dosageForm": "ODT",
+   "projectStatus": "Active",
    "stages": {
     "Initial Intake": "Completed",
     "APIs to Pete Pharma": "Completed",
@@ -377,6 +576,16 @@ window.DEMO_DATA = {
     "Formula Finalized": "Completed",
     "SOP Finalized": "Completed",
     "Production": "Not Started"
+   },
+   "stageDates": {
+    "Initial Intake": "",
+    "APIs to Pete Pharma": "",
+    "Formula Development": "",
+    "Samples to Curexa": "",
+    "Sample Feedback": "",
+    "Formula Finalized": "",
+    "SOP Finalized": "",
+    "Production": ""
    },
    "lastUpdated": "2026-10-03",
    "updatedBy": "Migration"
@@ -388,6 +597,7 @@ window.DEMO_DATA = {
    "apis": "TBD",
    "strengths": "TBD",
    "dosageForm": "Anhydrous Nasal Spray",
+   "projectStatus": "Paused",
    "stages": {
     "Initial Intake": "In Progress",
     "APIs to Pete Pharma": "Not Started",
@@ -397,6 +607,16 @@ window.DEMO_DATA = {
     "Formula Finalized": "Not Started",
     "SOP Finalized": "Not Started",
     "Production": "Not Started"
+   },
+   "stageDates": {
+    "Initial Intake": "",
+    "APIs to Pete Pharma": "",
+    "Formula Development": "",
+    "Samples to Curexa": "",
+    "Sample Feedback": "",
+    "Formula Finalized": "",
+    "SOP Finalized": "",
+    "Production": ""
    },
    "lastUpdated": "2026-10-03",
    "updatedBy": "Migration"
@@ -408,6 +628,7 @@ window.DEMO_DATA = {
    "apis": "Tadalafil; Creatine Monohydrate; L-Citrulline; Taurine",
    "strengths": "5 mg; 5 g; 3 g; 1.5 g",
    "dosageForm": "Powder for Oral Solution (Sachet)",
+   "projectStatus": "Active",
    "stages": {
     "Initial Intake": "Completed",
     "APIs to Pete Pharma": "In Progress",
@@ -417,6 +638,16 @@ window.DEMO_DATA = {
     "Formula Finalized": "Not Started",
     "SOP Finalized": "Not Started",
     "Production": "Not Started"
+   },
+   "stageDates": {
+    "Initial Intake": "",
+    "APIs to Pete Pharma": "",
+    "Formula Development": "",
+    "Samples to Curexa": "",
+    "Sample Feedback": "",
+    "Formula Finalized": "",
+    "SOP Finalized": "",
+    "Production": ""
    },
    "lastUpdated": "2026-10-03",
    "updatedBy": "Migration"
@@ -428,6 +659,7 @@ window.DEMO_DATA = {
    "apis": "Sildenafil; L-Citrulline; Beta-Alanine; Taurine; Caffeine; L-Theanine; L-Tyrosine; Na/K/Mg",
    "strengths": "25 mg; 5 g; 1.6 g; 1.5 g; 200 mg; 100 mg; 500 mg; 350/200/50 mg",
    "dosageForm": "Powder for Oral Solution (Sachet)",
+   "projectStatus": "Active",
    "stages": {
     "Initial Intake": "Completed",
     "APIs to Pete Pharma": "In Progress",
@@ -437,6 +669,16 @@ window.DEMO_DATA = {
     "Formula Finalized": "Not Started",
     "SOP Finalized": "Not Started",
     "Production": "Not Started"
+   },
+   "stageDates": {
+    "Initial Intake": "",
+    "APIs to Pete Pharma": "",
+    "Formula Development": "",
+    "Samples to Curexa": "",
+    "Sample Feedback": "",
+    "Formula Finalized": "",
+    "SOP Finalized": "",
+    "Production": ""
    },
    "lastUpdated": "2026-10-03",
    "updatedBy": "Migration"

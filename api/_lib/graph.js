@@ -67,6 +67,10 @@ export async function getAccessToken() {
   return cached.accessToken;
 }
 
+async function g_(path, opts = {}) {
+  return g(path, opts);
+}
+
 async function g(path, opts = {}) {
   const token = await getAccessToken();
   const res = await fetch(GRAPH + path, {
@@ -119,7 +123,9 @@ export async function readTrackerData() {
       apis: str(r[idx["APIs"]]),
       strengths: str(r[idx["Strengths"]]),
       dosageForm: str(r[idx["Dosage Form"]]),
+      projectStatus: str(r[idx["Project Status"]]) || "Active",
       stages: Object.fromEntries(STAGE_HEADERS.map(s => [s, str(r[idx[s]]) || "Not Started"])),
+      stageDates: Object.fromEntries(STAGE_HEADERS.map(s => [s, str(r[idx[s + " Date"]]) || ""])),
       lastUpdated: str(r[idx["Last Updated"]]),
       updatedBy: str(r[idx["Updated By"]]),
     }));
@@ -142,7 +148,7 @@ export async function updateTrackerCells(rowId, updates) {
   if (rowOffset === -1) throw new Error(`Row ${rowId} not found in tracker`);
   const sheetRow = t.startRow + 1 + rowOffset;
   for (const [header, value] of Object.entries(updates)) {
-    if (!(header in idx)) throw new Error(`Unknown column: ${header}`);
+    if (!(header in idx)) continue; // tolerate older workbooks missing a column
     const addr = `${numToCol(t.startCol + idx[header])}${sheetRow}`;
     await g(`${workbookBase()}/worksheets('${t.sheet}')/range(address='${addr}')`, {
       method: "PATCH",
@@ -171,7 +177,9 @@ export async function addTrackerRows(entries) {
     row[idx["APIs"]] = e.apis || "";
     row[idx["Strengths"]] = e.strengths || "";
     row[idx["Dosage Form"]] = e.dosageForm || "";
+    if ("Project Status" in idx) row[idx["Project Status"]] = "Active";
     for (const s of STAGE_HEADERS) row[idx[s]] = s === "Initial Intake" ? "In Progress" : "Not Started";
+    if ("Initial Intake Date" in idx) row[idx["Initial Intake Date"]] = e.date;
     row[idx["Last Updated"]] = e.date;
     row[idx["Updated By"]] = e.requester;
     return row;
@@ -194,6 +202,27 @@ export async function addTrackerRows(entries) {
     });
   }
   return ids;
+}
+
+export async function updateProjectStatus(project, status, author, date) {
+  const t = await readTable("TrackerTable");
+  const idx = Object.fromEntries(t.headers.map((h, i) => [h, i]));
+  if (!("Project Status" in idx)) throw new Error("Workbook has no Project Status column");
+  const targets = [];
+  t.rows.forEach((r, i) => {
+    if (String(r[idx["Project"]]) === String(project) && r[idx["Row ID"]]) targets.push(i);
+  });
+  if (!targets.length) throw new Error(`Project not found: ${project}`);
+  for (const rowOffset of targets) {
+    const sheetRow = t.startRow + 1 + rowOffset;
+    for (const [header, value] of [["Project Status", status], ["Last Updated", date], ["Updated By", author]]) {
+      const addr = `${numToCol(t.startCol + idx[header])}${sheetRow}`;
+      await g_(`${workbookBase()}/worksheets('${t.sheet}')/range(address='${addr}')`, {
+        method: "PATCH", body: { values: [[value]] },
+      });
+    }
+  }
+  return targets.length;
 }
 
 export async function addNoteRow({ date, project, sku, author, note }) {

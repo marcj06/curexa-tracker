@@ -21,4 +21,7 @@ window.TRACKER_CONFIG = {
 
   // Allowed status values. Must match the workbook's dropdown list.
   STATUSES: ["Not Started", "In Progress", "Blocked", "Completed", "N/A"],
+
+  // Project sections, in display order. Must match the workbook's Project Status dropdown.
+  PROJECT_STATUSES: ["Active", "Paused", "Licensed", "Not Feasible"],
 };
