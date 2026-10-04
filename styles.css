@@ -397,3 +397,22 @@ details.section[open] > summary.section-head::before { content: "▾"; }
   font-size: .82rem; background: var(--surface); margin-left: 4px;
 }
 .rework-btn { margin-top: 10px; width: 100%; }
+
+/* ---------- formula documents ---------- */
+.fact.muted { color: var(--muted); }
+.formula-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.formula-item { border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; }
+.formula-line { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.formula-meta { font-size: .82rem; color: var(--muted); min-width: 0; overflow-wrap: anywhere; }
+.formula-meta b { color: var(--ink); font-weight: 600; }
+.formula-name { color: var(--ink); font-weight: 500; }
+.formula-dl { font-size: .8rem; font-weight: 500; color: var(--brand); flex: none; text-decoration: none; }
+.formula-dl:hover { text-decoration: underline; }
+.formula-notes { font-size: .8rem; color: var(--ink); margin-top: 3px; white-space: pre-wrap; }
+.formula-form { display: flex; flex-direction: column; gap: 8px; }
+.formula-form input[type="file"] { font-size: .8rem; color: var(--muted); }
+.formula-form textarea {
+  width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px;
+  resize: vertical; font-size: .85rem; background: var(--surface);
+}
+.formula-form .note-controls { display: flex; justify-content: flex-end; margin-top: 0; }

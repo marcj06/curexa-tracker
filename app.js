@@ -7,7 +7,7 @@
   const SHORT = Object.fromEntries(CFG.STAGES.map(s => [s.key, s.short]));
 
   const state = {
-    rows: [], notes: [], demo: false,
+    rows: [], notes: [], formulas: [], demo: false,
     view: "board", search: "", filter: "",
     openRowId: null,
     openSections: new Set(), // collapsible board sections the user has expanded
@@ -53,7 +53,7 @@
     setSync("loading");
     try {
       const data = await api("tracker");
-      state.rows = data.rows; state.notes = data.notes; state.demo = false;
+      state.rows = data.rows; state.notes = data.notes; state.formulas = data.formulas || []; state.demo = false;
       setSync("live");
     } catch (e) {
       if (e.message === "auth") return;
@@ -61,6 +61,7 @@
       if (window.DEMO_DATA) {
         state.rows = structuredClone(window.DEMO_DATA.rows);
         state.notes = structuredClone(window.DEMO_DATA.notes);
+        state.formulas = structuredClone(window.DEMO_DATA.formulas || []);
         state.demo = true;
         setSync("demo");
         $("#demo-banner").hidden = false;
@@ -206,13 +207,13 @@
     }
     for (const status of CFG.PROJECT_STATUSES) {
       const list = sections.get(status);
-      const isOpen = status === "Active"; // displayed as "Open Projects"; always expanded
+      const isOpen = status === "Active"; // displayed as "Open Projects"; always rendered
       if (!isOpen && !list.length) continue;
       const head = [isOpen ? "Open Projects" : status, el("span", { class: "section-count" }, String(list.length))];
       const body = el("div", { class: "section-body" },
         list.length ? list.map(([p, rows]) => projectCard(p, rows))
           : el("p", { class: "empty" }, "No open projects match."));
-      if (isOpen) {
+      if (status !== "Paused") { // only Paused collapses; every other section is always expanded
         root.append(el("section", { class: "section" }, el("div", { class: "section-head" }, head), body));
       } else {
         const details = el("details", { class: "section", open: state.openSections.has(status),
@@ -284,6 +285,24 @@
       CFG.PROJECT_STATUSES.map(v => el("option", { value: v, selected: (r.projectStatus || "Active") === v }, v)));
     const sectionRow = el("p", { class: "fact section-row" }, el("b", {}, "Section: "), psSel);
 
+    const formulas = state.formulas.filter(f => f.project === r.project).sort((a, b) => b.version - a.version);
+    const formulaList = formulas.length
+      ? el("div", { class: "formula-list" }, formulas.map(f => el("div", { class: "formula-item" },
+          el("div", { class: "formula-line" },
+            el("span", { class: "formula-meta" },
+              el("b", {}, `v${f.version}`), ` · ${fmtDate(f.date)} · `,
+              el("span", { class: "formula-name" }, f.fileName), ` · by ${f.uploadedBy || "—"}`),
+            el("a", { class: "formula-dl", href: "/api/formulas?download=" + encodeURIComponent(f.itemId),
+              target: "_blank", rel: "noopener" }, "Download")),
+          f.notes ? el("div", { class: "formula-notes" }, f.notes) : null)))
+      : el("p", { class: "fact muted" }, "No formula files yet.");
+    const fileInput = el("input", { type: "file", "aria-label": "Formula file" });
+    const changeTa = el("textarea", { placeholder: "What changed? (required)", rows: 2 });
+    const uploadBtn = el("button", { class: "btn quiet", type: "button",
+      onclick: () => uploadFormula(r, fileInput, changeTa, uploadBtn) }, "Upload new version");
+    const formulaForm = el("div", { class: "formula-form" }, fileInput, changeTa,
+      el("div", { class: "note-controls" }, uploadBtn));
+
     const samplesTouched = ["Samples to Curexa", "Sample Feedback"].some(s => (r.stages[s] || "Not Started") !== "Not Started");
     const reworkBtn = (r.stages["Formula Development"] === "Completed" && samplesTouched)
       ? el("button", { class: "btn quiet rework-btn", type: "button", onclick: () => returnToFormulaDev(r) },
@@ -309,6 +328,7 @@
         el("p", { class: "fact" }, el("b", {}, "Dosage form: "), esc(r.dosageForm || "—")),
         el("p", { class: "fact" }, el("b", {}, "Last updated: "), `${esc(r.lastUpdated || "—")} by ${esc(r.updatedBy || "—")}`),
         sectionRow,
+        el("h3", {}, "Formula Documents"), formulaList, formulaForm,
         el("h3", {}, "Pipeline stages"), stageList, reworkBtn,
         el("h3", {}, `Notes — ${r.project}`), noteForm,
         ...notes.map(noteCard),
@@ -365,6 +385,54 @@
       note: "Returned to Formula Development after sample review." };
     if (state.demo) { state.notes.push(n); render(); return; }
     try { await api("note", { method: "POST", body: n }); state.notes.push(n); render(); } catch {}
+  }
+
+  // OneDrive upload sessions require every chunk but the last to be a multiple
+  // of 320 KiB, so use 25 × 320 KiB (~7.8 MB) rather than a flat 8 MiB.
+  const CHUNK = 25 * 320 * 1024;
+  const MAX_UPLOAD = 100 * 1024 * 1024;
+
+  async function uploadFormula(r, fileInput, changeTa, btn) {
+    const file = fileInput.files[0];
+    const notes = changeTa.value.trim();
+    if (!file) { fileInput.focus(); toast("Choose a file to upload", true); return; }
+    if (!notes) { changeTa.focus(); toast("Describe what changed in this version", true); return; }
+    if (state.demo) { toast("Demo mode — file not uploaded to OneDrive"); return; }
+    if (!file.size) { toast("That file is empty", true); return; }
+    if (file.size > MAX_UPLOAD) { toast("Files must be 100 MB or smaller", true); return; }
+
+    const author = storeGet("tracker.author") || "Portal user";
+    const label = btn.textContent;
+    btn.disabled = true; btn.textContent = "Uploading… 0%";
+    let uploadUrl;
+    try {
+      const started = await api("formulas", { method: "POST",
+        body: { action: "start", project: r.project, fileName: file.name, notes, author, size: file.size } });
+      uploadUrl = started.uploadUrl;
+      let item = null;
+      for (let start = 0; start < file.size; start += CHUNK) {
+        const end = Math.min(start + CHUNK, file.size);
+        // No Authorization header: the uploadUrl is pre-authenticated by Microsoft.
+        const res = await fetch(uploadUrl, { method: "PUT",
+          headers: { "Content-Range": `bytes ${start}-${end - 1}/${file.size}` },
+          body: file.slice(start, end) });
+        if (!res.ok) throw new Error(`upload failed (HTTP ${res.status})`);
+        btn.textContent = `Uploading… ${Math.round(100 * end / file.size)}%`;
+        if (end === file.size) item = await res.json(); // final chunk returns the driveItem
+      }
+      if (!item?.id) throw new Error("upload finished without a file id");
+      uploadUrl = null;
+      const done = await api("formulas", { method: "POST",
+        body: { action: "complete", project: r.project, version: started.version,
+          fileName: item.name || file.name, itemId: item.id, author, notes } });
+      state.formulas.push(done.formula);
+      toast(`Uploaded v${started.version} of ${r.project}`);
+      render();
+    } catch (e) {
+      if (uploadUrl) fetch(uploadUrl, { method: "DELETE" }).catch(() => {}); // drop the half-finished session
+      if (e.message !== "auth") toast("Couldn't upload: " + e.message, true);
+      btn.disabled = false; btn.textContent = label;
+    }
   }
 
   async function submitNote(r, ta, authorInput) {

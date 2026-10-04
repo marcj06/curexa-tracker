@@ -1,12 +1,12 @@
 import { requireAuth } from "./_lib/auth.js";
-import { readTrackerData } from "./_lib/graph.js";
+import { readTrackerData, readFormulas } from "./_lib/graph.js";
 
 export default async function handler(req, res) {
   if (!requireAuth(req, res)) return;
   try {
-    const data = await readTrackerData();
+    const [data, formulas] = await Promise.all([readTrackerData(), readFormulas()]);
     res.setHeader("Cache-Control", "no-store");
-    res.status(200).json(data);
+    res.status(200).json({ ...data, formulas });
   } catch (e) {
     res.status(502).json({ error: e.message });
   }

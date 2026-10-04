@@ -18,6 +18,9 @@ const GRAPH = "https://graph.microsoft.com/v1.0";
 
 const TRACKER_TABLE = "TrackerTable";
 const NOTES_TABLE = "NotesTable";
+const FORMULAS_TABLE = "FormulasTable";
+const FORMULAS_SHEET = "Formulas";
+const FORMULAS_HEADERS = ["Date", "Project", "Version", "File Name", "Item ID", "Uploaded By", "Change Notes"];
 export const STAGE_HEADERS = [
   "Initial Intake", "APIs to Pete Pharma", "Formula Development",
   "Samples to Curexa", "Sample Feedback", "Formula Finalized",
@@ -86,7 +89,10 @@ async function g(path, opts = {}) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const msg = data?.error?.message || res.statusText;
-    throw new Error(`Graph ${opts.method || "GET"} ${path} failed: ${msg}`);
+    const err = new Error(`Graph ${opts.method || "GET"} ${path} failed: ${msg}`);
+    err.status = res.status;          // lets callers branch on 404 / 409
+    err.code = data?.error?.code;     // e.g. "itemNotFound", "nameAlreadyExists"
+    throw err;
   }
   return data;
 }
@@ -97,6 +103,51 @@ function workbookBase() {
   // Encode each path segment so spaces, '&', '#' etc. in folder names are safe
   const enc = path.split("/").map(encodeURIComponent).join("/");
   return `/me/drive/root:${enc}:/workbook`;
+}
+
+// ---------- drive items relative to the workbook's folder ----------
+
+/** Segments of the folder containing the workbook, e.g. ["CurexaTracker"] ([] at drive root). */
+function workbookFolder() {
+  const path = process.env.WORKBOOK_PATH;
+  if (!path) throw new Error("WORKBOOK_PATH env var is not set");
+  return path.split("/").filter(Boolean).slice(0, -1);
+}
+
+/** Graph item address for a path under the workbook's folder: /me/drive/root:/a/b: */
+export function driveItemPath(...segments) {
+  const all = [...workbookFolder(), ...segments];
+  if (!all.length) return "/me/drive/root";
+  return `/me/drive/root:/${all.map(encodeURIComponent).join("/")}:`;
+}
+
+/** Create each folder in `segments` (under the workbook's folder) if it doesn't exist yet. */
+export async function ensureFolder(...segments) {
+  for (let i = 0; i < segments.length; i++) {
+    try {
+      await g(`${driveItemPath(...segments.slice(0, i))}/children`, {
+        method: "POST",
+        body: { name: segments[i], folder: {}, "@microsoft.graph.conflictBehavior": "fail" },
+      });
+    } catch (e) {
+      if (e.code !== "nameAlreadyExists") throw e;
+    }
+  }
+}
+
+/** Start a resumable upload; the returned uploadUrl is pre-authenticated (no bearer token). */
+export async function createUploadSession(...segments) {
+  const data = await g(`${driveItemPath(...segments)}/createUploadSession`, {
+    method: "POST",
+    body: { item: { "@microsoft.graph.conflictBehavior": "rename" } },
+  });
+  return data.uploadUrl;
+}
+
+/** Short-lived anonymous download URL for a drive item. */
+export async function getDownloadUrl(itemId) {
+  const data = await g(`/me/drive/items/${encodeURIComponent(itemId)}?$select=id,@microsoft.graph.downloadUrl`);
+  return data["@microsoft.graph.downloadUrl"] || null;
 }
 
 /** Full grid of a table (header + data) and its top-left sheet position. */
@@ -231,6 +282,62 @@ export async function addNoteRow({ date, project, sku, author, note }) {
     body: { values: [[date, project, sku || "—", author, note]] },
   });
 }
+
+// ---------- formula file version log ----------
+
+/** Create the Formulas sheet + FormulasTable on first use (older workbooks lack it). */
+export async function ensureFormulasTable() {
+  try {
+    await g(`${workbookBase()}/tables('${FORMULAS_TABLE}')?$select=name`);
+    return;
+  } catch (e) {
+    if (e.status !== 404) throw e;
+  }
+  try {
+    await g(`${workbookBase()}/worksheets/add`, { method: "POST", body: { name: FORMULAS_SHEET } });
+  } catch (e) {
+    // A previous half-finished run may have left the sheet behind; reuse it.
+    if (e.status !== 400 && e.status !== 409) throw e;
+  }
+  await g(`${workbookBase()}/worksheets('${FORMULAS_SHEET}')/range(address='A1:G1')`, {
+    method: "PATCH", body: { values: [FORMULAS_HEADERS] },
+  });
+  const table = await g(`${workbookBase()}/tables/add`, {
+    method: "POST", body: { address: `${FORMULAS_SHEET}!A1:G1`, hasHeaders: true },
+  });
+  await g(`${workbookBase()}/tables('${table.name}')`, { method: "PATCH", body: { name: FORMULAS_TABLE } });
+}
+
+/** All logged formula files; [] if the table hasn't been created yet (never creates it). */
+export async function readFormulas() {
+  let t;
+  try { t = await readTable(FORMULAS_TABLE); }
+  catch (e) { if (e.status === 404) return []; throw e; }
+  const i = Object.fromEntries(t.headers.map((h, n) => [h, n]));
+  return t.rows
+    .filter(r => r[i["Item ID"]]) // skips the blank body row Excel adds to a new table
+    .map(r => ({
+      date: excelDate(r[i["Date"]]),
+      project: str(r[i["Project"]]),
+      version: Number(r[i["Version"]]) || 0,
+      fileName: str(r[i["File Name"]]),
+      itemId: str(r[i["Item ID"]]),
+      uploadedBy: str(r[i["Uploaded By"]]),
+      notes: str(r[i["Change Notes"]]),
+    }));
+}
+
+export async function addFormulaRow({ date, project, version, fileName, itemId, uploadedBy, notes }) {
+  await g(`${workbookBase()}/tables('${FORMULAS_TABLE}')/rows`, {
+    method: "POST",
+    body: { values: [[date, project, version, fileName, itemId, uploadedBy, notes]] },
+  });
+}
+
+// Excel turns "2026-10-03" into a date serial on write; map it back to YYYY-MM-DD.
+const excelDate = v => typeof v === "number"
+  ? new Date(Math.round((v - 25569) * 86400000)).toISOString().slice(0, 10)
+  : str(v);
 
 export async function sendMail(subject, html) {
   const to = (process.env.NOTIFY_EMAIL || "").split(",").map(s => s.trim()).filter(Boolean);
