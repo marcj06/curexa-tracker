@@ -1,0 +1,7 @@
+{
+  "name": "petepharma-curexa-tracker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Pete Pharma x Curexa R&D project tracker — static site + Vercel functions backed by a OneDrive Excel workbook via Microsoft Graph."
+}

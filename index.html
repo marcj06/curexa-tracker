@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pete Pharma × Curexa — R&D Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="./config.js"></script>
+  <script src="./demo-data.js"></script>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div id="app" hidden>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <div>
+            <h1 id="site-title">Pete Pharma × Curexa</h1>
+            <p id="site-subtitle">R&D Project Tracker</p>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <span id="sync-status" class="sync" title="Data source status"></span>
+          <button id="btn-refresh" class="btn ghost" type="button">Refresh</button>
+          <button id="btn-new" class="btn primary" type="button">New project</button>
+        </div>
+      </div>
+    </header>
+
+    <div id="demo-banner" class="demo-banner" hidden>
+      Demo mode — showing a snapshot. Changes here aren't saved to the workbook.
+    </div>
+
+    <main class="shell">
+      <section class="summary" id="summary" aria-label="Pipeline summary"></section>
+
+      <div class="toolbar">
+        <div class="views" role="tablist" aria-label="View">
+          <button class="view-btn active" data-view="board" role="tab" aria-selected="true" type="button">Projects</button>
+          <button class="view-btn" data-view="table" role="tab" aria-selected="false" type="button">All SKUs</button>
+          <button class="view-btn" data-view="notes" role="tab" aria-selected="false" type="button">Notes log</button>
+        </div>
+        <div class="filters">
+          <input id="search" type="search" placeholder="Search projects, APIs…" aria-label="Search" />
+          <select id="filter-status" aria-label="Filter by attention">
+            <option value="">All projects</option>
+            <option value="Blocked">Has blocked stage</option>
+            <option value="In Progress">Has stage in progress</option>
+            <option value="active">Not yet in production</option>
+          </select>
+        </div>
+      </div>
+
+      <section id="view-board" class="view"></section>
+      <section id="view-table" class="view" hidden></section>
+      <section id="view-notes" class="view" hidden></section>
+    </main>
+
+    <aside id="drawer" class="drawer" hidden aria-label="Project detail"></aside>
+    <div id="drawer-backdrop" class="drawer-backdrop" hidden></div>
+
+    <div id="modal-root"></div>
+    <div id="toast" class="toast" hidden></div>
+  </div>
+
+  <div id="gate" class="gate" hidden>
+    <form id="gate-form" class="gate-card">
+      <span class="brand-mark big" aria-hidden="true"></span>
+      <h1>Pete Pharma × Curexa</h1>
+      <p>R&D Project Tracker. Enter the site password to continue.</p>
+      <input id="gate-pass" type="password" autocomplete="current-password" placeholder="Site password" required />
+      <button class="btn primary" type="submit">Open tracker</button>
+      <p id="gate-error" class="gate-error" hidden>That password didn't match. Check with Marc and try again.</p>
+    </form>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
