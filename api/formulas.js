@@ -1,7 +1,7 @@
 import { requireAuth } from "./_lib/auth.js";
 import {
   ensureFormulasTable, readFormulas, addFormulaRow, ensureFolder, createUploadSession,
-  getDownloadUrl, sendMail, notifyEnabled, todayStr,
+  getAccessToken, sendMail, notifyEnabled, todayStr,
 } from "./_lib/graph.js";
 
 const ROOT_FOLDER = "Formula Files";
@@ -89,9 +89,25 @@ async function complete(req, res) {
 async function download(req, res) {
   const itemId = String(req.query.download || "");
   if (!ITEM_ID.test(itemId)) return res.status(400).json({ error: "Invalid item id" });
-  const url = await getDownloadUrl(itemId);
-  if (!url) return res.status(404).json({ error: "File not found" });
+  // No $select: @microsoft.graph.downloadUrl is only reliably returned on an
+  // unfiltered item fetch (its selectable alias is content.downloadUrl).
+  const graphRes = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${encodeURIComponent(itemId)}`, {
+    headers: { Authorization: `Bearer ${await getAccessToken()}` },
+  });
+  const data = await graphRes.json().catch(() => ({}));
   res.setHeader("Cache-Control", "no-store");
+  if (!graphRes.ok) {
+    console.error(`Formula download: Graph GET item ${itemId} failed (${graphRes.status}):`, JSON.stringify(data));
+    const msg = data?.error?.message || graphRes.statusText;
+    const code = data?.error?.code ? ` [${data.error.code}]` : "";
+    return res.status(graphRes.status === 404 ? 404 : 502)
+      .json({ error: `OneDrive could not return this file: ${msg}${code}` });
+  }
+  const url = data["@microsoft.graph.downloadUrl"];
+  if (!url) {
+    console.error(`Formula download: item ${itemId} has no downloadUrl (folder or package?):`, JSON.stringify(data));
+    return res.status(502).json({ error: "OneDrive did not provide a download link for this item" });
+  }
   res.statusCode = 302;
   res.setHeader("Location", url);
   res.end();
