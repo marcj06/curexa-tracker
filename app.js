@@ -280,9 +280,12 @@
   };
   const clearDrafts = (r, ...keys) => keys.forEach(k => delete state.drafts[`${r.id}:${k}`]);
 
+  // Each SKU is its own formula. Blank tracker SKUs count as single-formulation ("—"),
+  // matching what the server stores; blank formula SKUs are legacy project-level uploads.
+  const skuOf = r => (r.sku || "").trim() || "—";
   // Newest upload first: by date, ties broken by later position in the log.
-  const formulasFor = project => state.formulas
-    .map((f, i) => [f, i]).filter(([f]) => f.project === project)
+  const formulasFor = (project, sku) => state.formulas
+    .map((f, i) => [f, i]).filter(([f]) => f.project === project && (f.sku || "") === sku)
     .sort(([a, ai], [b, bi]) => String(b.date).localeCompare(String(a.date)) || bi - ai)
     .map(([f]) => f);
   const nextVersion = formulas =>
@@ -311,19 +314,26 @@
       CFG.PROJECT_STATUSES.map(v => el("option", { value: v, selected: (r.projectStatus || "Active") === v }, sectionLabel(v))));
     const sectionRow = el("p", { class: "fact section-row" }, el("b", {}, "Section: "), psSel);
 
-    const formulas = formulasFor(r.project);
+    const formulaItem = (f, current) => el("div", { class: "formula-item" },
+      el("div", { class: "formula-line" },
+        el("span", { class: "formula-meta" },
+          el("b", {}, `v${f.version}`),
+          current ? el("span", { class: "formula-current", title: "Most recent upload" }, "✓ Current") : null,
+          ` · ${fmtDate(f.date)} · `,
+          el("span", { class: "formula-name" }, f.fileName), ` · by ${f.uploadedBy || "—"}`),
+        el("a", { class: "formula-dl", href: "/api/formulas?download=" + encodeURIComponent(f.itemId),
+          target: "_blank", rel: "noopener" }, "Download")),
+      f.notes ? el("div", { class: "formula-notes" }, f.notes) : null);
+    const formulas = formulasFor(r.project, skuOf(r));
     const formulaList = formulas.length
-      ? el("div", { class: "formula-list" }, formulas.map((f, i) => el("div", { class: "formula-item" },
-          el("div", { class: "formula-line" },
-            el("span", { class: "formula-meta" },
-              el("b", {}, `v${f.version}`),
-              i === 0 ? el("span", { class: "formula-current", title: "Most recent upload" }, "✓ Current") : null,
-              ` · ${fmtDate(f.date)} · `,
-              el("span", { class: "formula-name" }, f.fileName), ` · by ${f.uploadedBy || "—"}`),
-            el("a", { class: "formula-dl", href: "/api/formulas?download=" + encodeURIComponent(f.itemId),
-              target: "_blank", rel: "noopener" }, "Download")),
-          f.notes ? el("div", { class: "formula-notes" }, f.notes) : null)))
+      ? el("div", { class: "formula-list" }, formulas.map((f, i) => formulaItem(f, i === 0)))
       : el("p", { class: "fact muted" }, "No formula files yet.");
+    const legacy = formulasFor(r.project, "");
+    const legacyList = legacy.length
+      ? el("div", { class: "formula-legacy" },
+          el("h4", {}, "Unassigned project files"),
+          el("div", { class: "formula-list" }, legacy.map(f => formulaItem(f, false))))
+      : null;
     const uploading = state.upload?.rowId === r.id;
     const fileInput = el("input", { type: "file", "aria-label": "Formula file", disabled: uploading });
     const versionInput = draft(r, "version", el("input", { type: "text", maxlength: 20, "aria-label": "Version",
@@ -364,7 +374,7 @@
         el("p", { class: "fact" }, el("b", {}, "Dosage form: "), esc(r.dosageForm || "—")),
         el("p", { class: "fact" }, el("b", {}, "Last updated: "), `${esc(r.lastUpdated || "—")} by ${esc(r.updatedBy || "—")}`),
         sectionRow,
-        el("h3", {}, "Formula Documents"), formulaList, formulaForm,
+        el("h3", {}, "Formula Documents"), formulaList, formulaForm, legacyList,
         el("h3", {}, "Pipeline stages"), stageList, reworkBtn,
         el("h3", {}, `Notes — ${r.project}`), noteForm,
         ...notes.map(noteCard),
@@ -456,7 +466,7 @@
     let uploadUrl;
     try {
       const started = await api("formulas", { method: "POST",
-        body: { action: "start", project: r.project, version, fileName: file.name, notes, author, size: file.size } });
+        body: { action: "start", project: r.project, sku: skuOf(r), version, fileName: file.name, notes, author, size: file.size } });
       uploadUrl = started.uploadUrl;
       let item = null;
       for (let start = 0; start < file.size; start += CHUNK) {
@@ -472,12 +482,12 @@
       if (!item?.id) throw new Error("upload finished without a file id");
       uploadUrl = null;
       const done = await api("formulas", { method: "POST",
-        body: { action: "complete", project: r.project, version: started.version,
+        body: { action: "complete", project: r.project, sku: skuOf(r), version: started.version,
           fileName: item.name || file.name, itemId: item.id, author, notes } });
       state.formulas.push(done.formula);
       state.upload = null;
       clearDrafts(r, "version", "changes");
-      toast(`Uploaded v${started.version} of ${r.project}`);
+      toast(`Uploaded v${started.version} of ${r.project}${skuOf(r) !== "—" ? ` — ${skuOf(r)}` : ""}`);
       render();
     } catch (e) {
       if (uploadUrl) fetch(uploadUrl, { method: "DELETE" }).catch(() => {}); // drop the half-finished session

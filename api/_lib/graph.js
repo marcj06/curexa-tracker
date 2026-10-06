@@ -20,6 +20,7 @@ const TRACKER_TABLE = "TrackerTable";
 const NOTES_TABLE = "NotesTable";
 const FORMULAS_TABLE = "FormulasTable";
 const FORMULAS_SHEET = "Formulas";
+const FORMULAS_SKU_HEADER = "SKU / Variant";
 const FORMULAS_HEADERS = ["Date", "Project", "Version", "File Name", "Item ID", "Uploaded By", "Change Notes"];
 export const STAGE_HEADERS = [
   "Initial Intake", "APIs to Pete Pharma", "Formula Development",
@@ -285,14 +286,31 @@ export async function addNoteRow({ date, project, sku, author, note }) {
 
 // ---------- formula file version log ----------
 
-/** Create the Formulas sheet + FormulasTable on first use (older workbooks lack it). */
+/** Create the Formulas sheet + FormulasTable on first use (older workbooks lack it),
+    then add the SKU column if the table predates per-SKU formulas. */
 export async function ensureFormulasTable() {
+  let exists = true;
   try {
     await g(`${workbookBase()}/tables('${FORMULAS_TABLE}')?$select=name`);
-    return;
   } catch (e) {
     if (e.status !== 404) throw e;
+    exists = false;
   }
+  if (!exists) await createFormulasTable();
+  await ensureFormulasSkuColumn();
+}
+
+// Appended at the end, so existing rows keep their cells; their blank SKU marks
+// a legacy project-level upload from before per-SKU formulas.
+async function ensureFormulasSkuColumn() {
+  const cols = await g(`${workbookBase()}/tables('${FORMULAS_TABLE}')/columns?$select=name`);
+  if (cols.value.some(c => c.name === FORMULAS_SKU_HEADER)) return;
+  await g(`${workbookBase()}/tables('${FORMULAS_TABLE}')/columns`, {
+    method: "POST", body: { name: FORMULAS_SKU_HEADER },
+  });
+}
+
+async function createFormulasTable() {
   try {
     await g(`${workbookBase()}/worksheets/add`, { method: "POST", body: { name: FORMULAS_SHEET } });
   } catch (e) {
@@ -319,6 +337,7 @@ export async function readFormulas() {
     .map(r => ({
       date: excelDate(r[i["Date"]]),
       project: str(r[i["Project"]]),
+      sku: str(r[i[FORMULAS_SKU_HEADER]]), // "" = legacy project-level upload
       version: versionText(r[i["Version"]]),
       fileName: str(r[i["File Name"]]),
       itemId: str(r[i["Item ID"]]),
@@ -327,11 +346,19 @@ export async function readFormulas() {
     }));
 }
 
-export async function addFormulaRow({ date, project, version, fileName, itemId, uploadedBy, notes }) {
-  await g(`${workbookBase()}/tables('${FORMULAS_TABLE}')/rows`, {
-    method: "POST",
+/** Append a version row, placing values by header name: the SKU column sits at the
+    end of migrated tables. Call ensureFormulasTable() first. */
+export async function addFormulaRow({ date, project, sku, version, fileName, itemId, uploadedBy, notes }) {
+  const head = await g(`${workbookBase()}/tables('${FORMULAS_TABLE}')/headerRowRange?$select=values`);
+  const byHeader = {
+    "Date": date, "Project": project, [FORMULAS_SKU_HEADER]: sku,
     // Leading apostrophe = Excel's text prefix, so "1.10" / "3-1" aren't turned into numbers or dates.
-    body: { values: [[date, project, "'" + String(version), fileName, itemId, uploadedBy, notes]] },
+    "Version": "'" + String(version),
+    "File Name": fileName, "Item ID": itemId, "Uploaded By": uploadedBy, "Change Notes": notes,
+  };
+  const row = head.values[0].map(h => byHeader[String(h)] ?? "");
+  await g(`${workbookBase()}/tables('${FORMULAS_TABLE}')/rows`, {
+    method: "POST", body: { values: [row] },
   });
 }
 

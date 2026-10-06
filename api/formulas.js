@@ -30,7 +30,8 @@ export default async function handler(req, res) {
 
 async function start(req, res) {
   const { project, fileName, size } = req.body;
-  if (!project || !fileName) return res.status(400).json({ error: "Expected project and fileName" });
+  const sku = cleanSku(req.body.sku);
+  if (!project || !fileName || !sku) return res.status(400).json({ error: "Expected project, sku and fileName" });
   const bytes = Number(size);
   if (!(bytes > 0)) return res.status(400).json({ error: "File is empty" });
   if (bytes > MAX_SIZE) return res.status(413).json({ error: "File is larger than 100 MB" });
@@ -39,15 +40,18 @@ async function start(req, res) {
   await ensureFormulasTable();
   const projectName = String(project).slice(0, 120);
   // Caller may label the version (e.g. "3.1", "2-final"); otherwise auto-number
-  // from the leading number of existing labels (same rule as the browser's prefill).
+  // from the leading number of this SKU's existing labels (same rule as the browser's
+  // prefill). Legacy blank-SKU rows never match, so they don't count.
   const version = cleanVersion(req.body.version) || 1 + Math.floor((await readFormulas())
-    .filter(f => f.project === projectName)
+    .filter(f => f.project === projectName && f.sku === sku)
     .map(f => parseFloat(f.version)).filter(Number.isFinite)
     .reduce((mx, n) => Math.max(mx, n), 0));
 
-  const folder = cleanFolderName(projectName);
-  await ensureFolder(ROOT_FOLDER, folder);
-  const uploadUrl = await createUploadSession(ROOT_FOLDER, folder, `v${version} - ${name}`);
+  // Formula Files/<project>/<sku>/ — single-formulation projects skip the SKU level.
+  const folders = [ROOT_FOLDER, cleanFolderName(projectName, "Untitled project")];
+  if (sku !== SINGLE) folders.push(cleanFolderName(sku, "Unnamed SKU"));
+  await ensureFolder(...folders);
+  const uploadUrl = await createUploadSession(...folders, `v${version} - ${name}`);
   res.setHeader("Cache-Control", "no-store");
   res.status(200).json({ uploadUrl, version });
 }
@@ -55,12 +59,14 @@ async function start(req, res) {
 async function complete(req, res) {
   const { project, version, fileName, itemId, author, notes } = req.body;
   const v = cleanVersion(version);
-  if (!project || !fileName || !v) return res.status(400).json({ error: "Expected project, version and fileName" });
+  const sku = cleanSku(req.body.sku);
+  if (!project || !fileName || !v || !sku) return res.status(400).json({ error: "Expected project, sku, version and fileName" });
   if (!itemId || !ITEM_ID.test(itemId)) return res.status(400).json({ error: "Invalid item id" });
 
   const row = {
     date: todayStr(),
     project: String(project).slice(0, 120),
+    sku,
     version: v,
     fileName: String(fileName).slice(0, 200),
     itemId: String(itemId),
@@ -70,9 +76,10 @@ async function complete(req, res) {
   await ensureFormulasTable();
   await addFormulaRow(row);
   if (notifyEnabled("note")) {
+    const label = row.project + (sku !== SINGLE ? ` — ${sku}` : "");
     await sendMail(
-      `[R&D Tracker] New formula file for ${row.project} (v${v})`,
-      `<p><b>${esc(row.uploadedBy)}</b> uploaded <b>v${v}</b> of the formula for <b>${esc(row.project)}</b>: ${esc(row.fileName)}</p>
+      `[R&D Tracker] New formula file for ${label} (v${v})`,
+      `<p><b>${esc(row.uploadedBy)}</b> uploaded <b>v${v}</b> of the formula for <b>${esc(label)}</b>: ${esc(row.fileName)}</p>
        ${row.notes ? `<p>What changed:</p><blockquote>${esc(row.notes)}</blockquote>` : ""}`
     ).catch(() => {});
   }
@@ -108,10 +115,17 @@ function cleanFileName(raw) {
   return name;
 }
 
-/** Project names like "Minoxidil/Finasteride" become a single safe folder name. */
-function cleanFolderName(project) {
-  const name = project.replace(ILLEGAL, "-").replace(/\s+/g, " ").trim().replace(/[. ]+$/, "");
-  return name || "Untitled project";
+/** Names like "Minoxidil/Finasteride" or "56/12 mg — White" become a single safe folder name. */
+function cleanFolderName(raw, fallback) {
+  const name = raw.replace(ILLEGAL, "-").replace(/\s+/g, " ").trim().replace(/[. ]+$/, "");
+  return name || fallback;
 }
+
+/** Tracker's SKU value for single-formulation projects. */
+const SINGLE = "—";
+
+/** SKU as stored in the log: kept verbatim (minus control chars) so it matches the
+    tracker row's SKU exactly; only its folder name is made path-safe. "" if missing. */
+const cleanSku = raw => String(raw ?? "").replace(/[\u0000-\u001f]/g, "").trim().slice(0, 120);
 
 const esc = s => String(s ?? "").replace(/[<>&"]/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c]));
